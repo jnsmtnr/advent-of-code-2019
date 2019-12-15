@@ -16,12 +16,17 @@ console.log(testInput)
 // }
 
 const testLof = (input, x1, y1, x2, y2) => {
-    for (let y = y1; y <= y2; y++) {
-        for (let x = x1; x <=x2; x++) {
+    const xMin = Math.min(x1,x2)
+    const xMax = Math.max(x1,x2)
+
+    const yMin = Math.min(y1,y2)
+    const yMax = Math.max(y1,y2)
+    
+    for (let y = yMin; y <= yMax; y++) {
+        for (let x = xMin; x <= xMax; x++) {
             if (x == x1 && y == y1) {
-                console.log('kezdőpont')
+                continue
             } else if (x == x2 && y == y2) {
-                console.log('végpont')
                 return true
             } else {
                 if ( input[y][x] === '#' ) {
@@ -34,4 +39,4 @@ const testLof = (input, x1, y1, x2, y2) => {
     }
 }
 
-console.log( testLof(testInput, 1, 0, 4, 4) )
+console.log( testLof(testInput, 0, 4, 4, 4) )
