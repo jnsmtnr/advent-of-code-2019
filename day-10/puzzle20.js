@@ -21,58 +21,93 @@ const input = `
 ###.##.####.##.#..##
 `.split('\n').filter(row => row.length > 0).map(row => row.split(''))
 
-const laserPosition = { x: 11, y: 13 }
+const fs = require('fs')
 
-const steepnessArrayCalc = (input, origo) => {
-    steepnessArray = []
-    for (let y = 0; y < origo.y; y++) {
-        for (let x = origo.x; x < input[y].length; x++) {
-            if (x == origo.x && y == origo.y) {
-                continue
-            } else if (input[y][x] == '#') {
-                let steepness = (y - origo.y)/(x - origo.x)
-                if (!steepnessArray.includes(steepness)) {
-                    steepnessArray.push(steepness)
-                }
-            }
-        }
+const puzzleInput = fs.readFileSync('input.txt', 'utf-8').split('\n').filter(row => row.length > 0).map(row => row.split(''))
+
+
+const laserPosition = { x: 11, y: 11 }
+
+const aimAtAsteroid = (laserPos, asteroidPos) => {
+    const toDeg = (rad) => rad * 180 / Math.PI
+
+    let bearing = toDeg(Math.atan( (asteroidPos.x - laserPos.x) / -(asteroidPos.y - laserPos.y) ))
+    const deltaX = asteroidPos.x - laserPos.x
+    const deltaY = asteroidPos.y - laserPos.y
+    const range = Math.sqrt(deltaX*deltaX + deltaY*deltaY)
+
+    if (deltaX > 0 && deltaY > 0) {
+        bearing += 180
+    } else if (deltaX < 0 && deltaY > 0) {
+        bearing += 180
+    } else if (deltaX < 0 && deltaY < 0) {
+        bearing += 360
+    } else if (deltaX === 0 && deltaY < 0) {
+        bearing = 0
+    } else if (deltaX === 0 && deltaY > 0) {
+        bearing = 180
+    } else if (deltaX > 0 && deltaY === 0) {
+        bearing = 90
+    } else if (deltaX < 0 && deltaY === 0) {
+        bearing = 270
     }
-    return steepnessArray.sort((a,b) => a - b)
+
+    return {
+        bearing,
+        range,
+        x: asteroidPos.x,
+        y: asteroidPos.y
+    }
 }
 
-const laserBeam = (input, laserX, laserY, m) => {
-    let nearestTarget = { range: Infinity }
-        
+const getAllAsteroid = (input, laserPos) => {
+    const bearings = []
     for (let y = 0; y < input.length; y++) {
         for (let x = 0; x < input[y].length; x++) {
-            if (x == laserX && y == laserY) {
+            if (x === laserPos.x && y === laserPos.y) {
                 continue
-            } else if ( input[y][x] === '#' ) {
-                if ( ((m == Infinity || m == -Infinity) && x == laserX ) || y == m*x + (laserY - m*laserX)) {               
-                    let range = Math.abs(x-laserX) + Math.abs(y-laserY)
-                    if (range <= nearestTarget.range) {
-                        nearestTarget = {
-                            x,
-                            y,
-                            range
-                        }
-                    }
-                }
+            } else if ( input[y][x] === '#' ){
+                bearings.push(aimAtAsteroid(laserPos, {x, y}))
             }
         }
     }
-    return nearestTarget
+    return bearings
 }
 
-const steepness = steepnessArrayCalc(input, laserPosition)
+// const allAsteroid = getAllAsteroid(input, laserPosition)
+const allAsteroid = getAllAsteroid(puzzleInput, laserPosition)
+let allBearing = []
 
-console.log(steepness[0], steepness[1], steepness[2], steepness[9])
+allAsteroid.forEach(asteroid => {
+    if (!allBearing.includes(asteroid.bearing)) {
+        allBearing.push(asteroid.bearing)
+    }
+})
 
-console.log(laserBeam(input, laserPosition.x, laserPosition.y, steepness[0]))
-console.log(laserBeam(input, laserPosition.x, laserPosition.y, steepness[1]))
-console.log(laserBeam(input, laserPosition.x, laserPosition.y, steepness[2]))
-console.log(laserBeam(input, laserPosition.x, laserPosition.y, steepness[9]))
+allBearing = allBearing.sort((a,b) => a - b)
 
-// console.log(steepnessArrayCalc(input, laserPosition))
+const fireAtBearing = (asteroids, bearing) => {
+    const asteroidsAtBearing = asteroids.filter(x => x.bearing === bearing).sort((a,b) => a.range - b.range)
 
-// console.log(laserBeam(input, laserPosition.x, laserPosition.y, 12, 1))
+    if (asteroidsAtBearing.length === 0) {
+        return 'no asteroid at bearing ' + bearing
+    }
+
+    const target = {
+        x: asteroidsAtBearing[0].x,
+        y: asteroidsAtBearing[0].y
+    }
+
+    const indexOfAsteroid = asteroids.findIndex(ast => ast.x === asteroidsAtBearing[0].x && ast.y === asteroidsAtBearing[0].y)
+
+    asteroids.splice(indexOfAsteroid, 1)
+
+    return target
+}
+
+console.log(fireAtBearing(allAsteroid, allBearing[0]))
+console.log(fireAtBearing(allAsteroid, allBearing[1]))
+console.log(fireAtBearing(allAsteroid, allBearing[2]))
+console.log(fireAtBearing(allAsteroid, allBearing[9]))
+console.log(fireAtBearing(allAsteroid, allBearing[19]))
+console.log(fireAtBearing(allAsteroid, allBearing[199]))
